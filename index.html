@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>취향(取向) - 이어 변주하다 | 전시 연계 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;700&family=Pretendard:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --font-serif: 'Noto Serif KR', serif;
+            --font-sans: 'Pretendard', sans-serif;
+        }
+        body {
+            font-family: var(--font-sans);
+            background-color: #f9f9f9;
+            color: #1a1a1a;
+            -webkit-font-smoothing: antialiased;
+        }
+        .font-serif {
+            font-family: var(--font-serif);
+        }
+        
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.8s ease-in-out forwards;
+        }
+        .slide-up {
+            animation: slideUp 0.8s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #1a1a1a;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Accordion transition */
+        .accordion-content {
+            transition: max-height 0.4s ease-out, padding 0.4s ease;
+            max-height: 0;
+            overflow: hidden;
+        }
+        .accordion-content.open {
+            max-height: 500px; /* Arbitrary large max-height */
+        }
+        .accordion-icon {
+            transition: transform 0.3s ease;
+        }
+        .accordion-button[aria-expanded="true"] .accordion-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Hide elements utility */
+        .hidden-section {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- 1. Start Screen -->
+    <section id="screen-start" class="w-full max-w-md flex flex-col items-center justify-center min-h-[80vh] text-center fade-in">
+        <p class="text-sm tracking-widest text-gray-500 mb-4 font-light">시안미술관 야정 서근섭 개인전</p>
+        <h1 class="text-4xl md:text-5xl font-serif font-bold mb-6 leading-tight">
+            취향(取向)
+        </h1>
+        <p class="text-gray-600 mb-12 text-sm md:text-base px-4 leading-relaxed break-keep">
+            기존의 기호를 뜻하는 취향이 아닌,<br>
+            취하여 나아간다는 뜻의 한자를 사용하여<br>
+            전통은 어떤 것을 취하고 어느 방향을 향해 나아가야 하는가를 탐구한다.
+        </p>
+        <button onclick="startTest()" class="w-full max-w-xs bg-black text-white py-4 px-8 rounded-full font-medium hover:bg-gray-800 transition duration-300 shadow-lg">
+            나의 취향 찾기 시작
+        </button>
+    </section>
+
+    <!-- 2. Question Screen -->
+    <section id="screen-question" class="w-full max-w-md min-h-[80vh] flex flex-col justify-center hidden-section">
+        <!-- Progress Bar -->
+        <div class="w-full mb-8">
+            <div class="flex justify-between text-xs text-gray-500 mb-2 font-mono">
+                <span id="question-number">01</span>
+                <span>08</span>
+            </div>
+            <div class="w-full bg-gray-200 h-1 rounded-full overflow-hidden">
+                <div id="progress-bar" class="bg-black h-full transition-all duration-300" style="width: 12.5%;"></div>
+            </div>
+        </div>
+
+        <!-- Question Text -->
+        <div class="min-h-[150px] flex items-center mb-8 fade-in" id="question-text-container">
+            <h2 id="question-text" class="text-xl md:text-2xl font-serif font-medium leading-relaxed text-gray-900 break-keep">
+                질문이 여기에 표시됩니다.
+            </h2>
+        </div>
+
+        <!-- Options -->
+        <div class="flex flex-col gap-4 fade-in" id="options-container">
+            <button onclick="selectOption('A')" id="btn-a" class="w-full text-left p-5 border border-gray-300 rounded-xl bg-white hover:border-black hover:bg-gray-50 transition duration-200 shadow-sm leading-relaxed">
+                옵션 A
+            </button>
+            <button onclick="selectOption('B')" id="btn-b" class="w-full text-left p-5 border border-gray-300 rounded-xl bg-white hover:border-black hover:bg-gray-50 transition duration-200 shadow-sm leading-relaxed">
+                옵션 B
+            </button>
+        </div>
+    </section>
+
+    <!-- 3. Loading Screen -->
+    <section id="screen-loading" class="w-full max-w-md flex flex-col items-center justify-center min-h-[80vh] text-center hidden-section">
+        <div class="spinner mb-6"></div>
+        <h2 class="text-xl font-serif font-medium text-gray-900 mb-2">결과를 분석 중입니다</h2>
+        <p class="text-gray-500 text-sm">당신의 취향에 닿아있는 작품을 찾고 있습니다...</p>
+    </section>
+
+    <!-- 4. Result Screen -->
+    <section id="screen-result" class="w-full max-w-md hidden-section pb-12">
+        <div id="result-content" class="slide-up">
+            <!-- Header -->
+            <div class="text-center mb-10 pt-8">
+                <p class="text-sm font-semibold tracking-wider text-gray-500 mb-2">나의 전시 관람 유형</p>
+                <h1 id="result-title" class="text-3xl font-sans font-bold text-gray-900 mb-4 break-keep tracking-tight">
+                    타이틀
+                </h1>
+                <p id="result-desc" class="text-gray-600 leading-relaxed px-2 text-sm break-keep">
+                    설명
+                </p>
+            </div>
+
+            <!-- Recommendation Card -->
+            <div class="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm mb-12">
+                <p class="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">Recommended Space</p>
+                <h3 id="result-space" class="text-xl font-serif font-bold text-black mb-3">추천 공간</h3>
+                <p id="result-space-desc" class="text-sm text-gray-600 leading-relaxed">
+                    공간 설명
+                </p>
+            </div>
+            
+            <hr class="border-gray-200 mb-12">
+
+            <!-- Evolution Accordion Section -->
+            <div class="mb-10">
+                <div class="text-center mb-8">
+                    <h2 class="text-xl font-serif font-bold text-gray-900">작가의 4단계 변화 과정</h2>
+                    <p class="text-xs text-gray-500 mt-2">다른 결과 보기 및 전시 전체 서사</p>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <!-- Accordion Item 1 -->
+                    <div class="border border-gray-200 rounded-xl bg-white overflow-hidden">
+                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left focus:outline-none" aria-expanded="false" onclick="toggleAccordion('acc-1', this)">
+                            <span class="font-medium text-sm"><span class="text-gray-400 mr-2">1. 기초</span> 본질에 집중하는 미니멀리스트</span>
+                            <svg class="accordion-icon w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="acc-1" class="accordion-content bg-gray-50">
+                            <div class="p-5 pt-0 flex flex-col gap-5 text-sm text-gray-600 leading-relaxed">
+                                <div class="bg-gray-100 p-4 rounded-lg break-keep text-gray-800">
+                                    당신은 겉치레보다 사물의 본질과 깊이를 중시하는 성향입니다. 흑백의 강렬한 대비처럼 분명하고 단단한 내면을 가졌습니다.
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-indigo-500 mb-1 tracking-wide">📍 나와 잘 맞는 공간</p>
+                                    <p class="font-bold text-black mb-1">1전시실 초입 <span class="text-xs font-normal text-gray-500 ml-1">(먹과 붓, 단순한 선과 원)</span></p>
+                                    <p class="break-keep">작가의 초기 작업 단계로, 가장 기초적인 조형 요소와 먹의 농담만으로 깊이를 표현한 공간입니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 2 -->
+                    <div class="border border-gray-200 rounded-xl bg-white overflow-hidden">
+                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left focus:outline-none" aria-expanded="false" onclick="toggleAccordion('acc-2', this)">
+                            <span class="font-medium text-sm"><span class="text-gray-400 mr-2">2. 색채 변주</span> 유연하게 변주하는 트렌드세터</span>
+                            <svg class="accordion-icon w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="acc-2" class="accordion-content bg-gray-50">
+                            <div class="p-5 pt-0 flex flex-col gap-5 text-sm text-gray-600 leading-relaxed">
+                                <div class="bg-gray-100 p-4 rounded-lg break-keep text-gray-800">
+                                    당신은 다채로운 감각을 지녔으면서도 자신만의 질서 안에서 이를 조화롭게 다루는 능력이 있습니다. 전통과 현대를 아우르며, 일상에 적절한 활력과 컬러를 더하는 것을 즐깁니다.
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-indigo-500 mb-1 tracking-wide">📍 나와 잘 맞는 공간</p>
+                                    <p class="font-bold text-black mb-1">1전시실 안쪽 <span class="text-xs font-normal text-gray-500 ml-1">(컬러를 입힌 추상적 대나무)</span></p>
+                                    <p class="break-keep">전통적인 소재에 현대적인 색채를 부여하여 새로운 감각을 시도한 작가의 변주를 보여주는 공간입니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 3 -->
+                    <div class="border border-gray-200 rounded-xl bg-white overflow-hidden">
+                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left focus:outline-none" aria-expanded="false" onclick="toggleAccordion('acc-3', this)">
+                            <span class="font-medium text-sm"><span class="text-gray-400 mr-2">3. 형식 파괴</span> 시선을 뒤집는 자유로운 탐험가</span>
+                            <svg class="accordion-icon w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="acc-3" class="accordion-content bg-gray-50">
+                            <div class="p-5 pt-0 flex flex-col gap-5 text-sm text-gray-600 leading-relaxed">
+                                <div class="bg-gray-100 p-4 rounded-lg break-keep text-gray-800">
+                                    당신은 기존의 규칙에 얽매이지 않고 세상을 새로운 시각으로 바라보는 것을 즐깁니다. 정해진 틀을 깨고 나오는 파격적인 시도에서 영감을 얻습니다.
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-indigo-500 mb-1 tracking-wide">📍 나와 잘 맞는 공간</p>
+                                    <p class="font-bold text-black mb-1">2전시실 <span class="text-xs font-normal text-gray-500 ml-1">(바닥에 놓인 거대한 흑백 수묵)</span></p>
+                                    <p class="break-keep">벽에 걸리는 전통적인 회화의 방식을 탈피하여 바닥 전체를 캔버스로 활용한 파격적인 공간입니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 4 -->
+                    <div class="border border-gray-200 rounded-xl bg-white overflow-hidden">
+                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left focus:outline-none" aria-expanded="false" onclick="toggleAccordion('acc-4', this)">
+                            <span class="font-medium text-sm"><span class="text-gray-400 mr-2">4. 철학적 확장</span> 모든 색을 품은 낭만적 맥시멀리스트</span>
+                            <svg class="accordion-icon w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="acc-4" class="accordion-content bg-gray-50">
+                            <div class="p-5 pt-0 flex flex-col gap-5 text-sm text-gray-600 leading-relaxed">
+                                <div class="bg-gray-100 p-4 rounded-lg break-keep text-gray-800">
+                                    당신은 경험의 폭이 넓고 다양한 가치를 수용할 줄 아는 풍부한 감수성의 소유자입니다. 수많은 경험과 감정이 쌓여 당신만의 깊고 오묘한 매력을 완성합니다.
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-indigo-500 mb-1 tracking-wide">📍 나와 잘 맞는 공간</p>
+                                    <p class="font-bold text-black mb-1">3전시실 <span class="text-xs font-normal text-gray-500 ml-1">(검을 현(玄), 다채로운 색의 대나무)</span></p>
+                                    <p class="break-keep">모든 색을 섞으면 결국 검은색(玄)이 되듯, 작가의 모든 예술적 실험과 다채로운 철학이 응축된 최종 공간입니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Restart Button -->
+            <button onclick="restartTest()" class="w-full bg-white border border-black text-black py-4 rounded-full font-medium hover:bg-black hover:text-white transition duration-300 shadow-sm mt-4">
+                테스트 다시 하기
+            </button>
+        </div>
+    </section>
+
+    <script>
+        /* State Variables */
+        let currentQuestion = 0;
+        let scoreAxis1 = { A: 0, B: 0 }; // Questions 1-4 (Visual)
+        let scoreAxis2 = { A: 0, B: 0 }; // Questions 5-8 (Behavior)
+
+        /* Data: Questions */
+        const questions = [
+            // Axis 1: Visual Taste (A: Achromatic/Essence, B: Color/Diversity)
+            {
+                q: "매일 가지고 다닐 수첩을 하나 새로 고른다면, 나의 시선이 먼저 향하는 곳은?",
+                a: "오래 보아도 질리지 않는, 군더더기 없는 무채색 수첩",
+                b: "볼 때마다 기분 좋은 에너지를 주는, 선명한 색감의 수첩"
+            },
+            {
+                q: "나의 옷장을 열어보면?",
+                a: "무채색 위주의 깔끔하고 정돈된 옷들이 많다.",
+                b: "기분과 날씨에 따라 선택할 수 있는 다양한 색상의 옷이 있다."
+            },
+            {
+                q: "내 공간을 꾸밀 때 내가 선호하는 방식은?",
+                a: "불필요한 장식을 덜어내어 여백의 미를 살린다.",
+                b: "화려한 오브제와 소품들로 개성을 듬뿍 담아낸다."
+            },
+            {
+                q: "비 내리는 풍경을 바라볼 때, 나의 시선이 머무는 곳은?",
+                a: "차분하게 가라앉은 잿빛 하늘과 빗방울의 형태.",
+                b: "비를 맞아 더욱 선명해진 나뭇잎과 간판들의 색채."
+            },
+            // Axis 2: Behavior (A: Rule/Plan, B: Unconventional/Improvised)
+            {
+                q: "여행을 떠나기 전날 밤, 나의 모습은?",
+                a: "시간별 일정표를 확인하며 짐이 잘 챙겨졌는지 점검한다.",
+                b: "발길 닿는 대로 갈 생각에 부풀어 대략적인 장소만 찾아본다."
+            },
+            {
+                q: "새로운 악기나 기술을 배울 때 나는?",
+                a: "기본기부터 탄탄하게 다지며 정해진 매뉴얼을 따른다.",
+                b: "일단 부딪혀 보며 나만의 방식을 찾아 응용해 본다."
+            },
+            {
+                q: "미술관에서 작품을 관람하는 나만의 방식은?",
+                a: "동선을 따라 순서대로 관람하며 작품 설명을 꼼꼼히 읽는다.",
+                b: "가장 먼저 눈길을 끄는 작품으로 직진하거나 내 마음대로 관람한다."
+            },
+            {
+                q: "갑작스럽게 주말 약속이 취소되었다면?",
+                a: "미리 세워두었던 플랜 B를 실행하거나 차분히 밀린 일을 한다.",
+                b: "즉흥적으로 평소 가보지 않았던 새로운 장소로 훌쩍 떠난다."
+            }
+        ];
+
+        /* Data: Results */
+        const resultData = {
+            'AA': {
+                title: "본질에 집중하는 미니멀리스트",
+                desc: "당신은 겉치레보다 사물의 본질과 깊이를 중시하는 성향입니다. 흑백의 강렬한 대비처럼 분명하고 단단한 내면을 가졌습니다.",
+                space: "1전시실 초입",
+                spaceDesc: "작가의 초기 작업 단계로, 가장 기초적인 조형 요소와 먹의 농담만으로 깊이를 표현한 공간입니다."
+            },
+            'BA': {
+                title: "유연하게 변주하는 트렌드세터",
+                desc: "당신은 다채로운 감각을 지녔으면서도 자신만의 질서 안에서 이를 조화롭게 다루는 능력이 있습니다. 전통과 현대를 아우르며, 일상에 적절한 활력과 컬러를 더하는 것을 즐깁니다.",
+                space: "1전시실 안쪽",
+                spaceDesc: "전통적인 소재에 현대적인 색채를 부여하여 새로운 감각을 시도한 작가의 변주를 보여주는 공간입니다."
+            },
+            'AB': {
+                title: "시선을 뒤집는 자유로운 탐험가",
+                desc: "당신은 기존의 규칙에 얽매이지 않고 세상을 새로운 시각으로 바라보는 것을 즐깁니다. 정해진 틀을 깨고 나오는 파격적인 시도에서 영감을 얻습니다.",
+                space: "2전시실",
+                spaceDesc: "벽에 걸리는 전통적인 회화의 방식을 탈피하여 바닥 전체를 캔버스로 활용한 파격적인 공간입니다."
+            },
+            'BB': {
+                title: "모든 색을 품은 낭만적 맥시멀리스트",
+                desc: "당신은 경험의 폭이 넓고 다양한 가치를 수용할 줄 아는 풍부한 감수성의 소유자입니다. 수많은 경험과 감정이 쌓여 당신만의 깊고 오묘한 매력을 완성합니다.",
+                space: "3전시실",
+                spaceDesc: "모든 색을 섞으면 결국 검은색(玄)이 되듯, 작가의 모든 예술적 실험과 다채로운 철학이 응축된 최종 공간입니다."
+            }
+        };
+
+        
+        // Navigation Utilities
+        function showScreen(screenId) {
+            document.querySelectorAll('section').forEach(sec => {
+                sec.classList.add('hidden-section');
+                sec.classList.remove('fade-in'); // Reset animation
+            });
+            const target = document.getElementById(screenId);
+            target.classList.remove('hidden-section');
+            target.classList.add('fade-in');
+        }
+
+        // Start Test
+        function startTest() {
+            currentQuestion = 0;
+            scoreAxis1 = { A: 0, B: 0 };
+            scoreAxis2 = { A: 0, B: 0 };
+            renderQuestion();
+            showScreen('screen-question');
+        }
+
+        // Render Current Question
+        function renderQuestion() {
+            const qData = questions[currentQuestion];
+            
+            // Re-trigger animation by cloning and replacing container
+            const container = document.getElementById('question-text-container');
+            const newContainer = container.cloneNode(true);
+            container.parentNode.replaceChild(newContainer, container);
+            
+            const options = document.getElementById('options-container');
+            const newOptions = options.cloneNode(true);
+            options.parentNode.replaceChild(newOptions, options);
+
+            // Update DOM with newly cloned references
+            document.getElementById('question-number').innerText = String(currentQuestion + 1).padStart(2, '0');
+            document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / 8) * 100}%`;
+            document.getElementById('question-text').innerText = qData.q;
+            document.getElementById('btn-a').innerText = qData.a;
+            document.getElementById('btn-b').innerText = qData.b;
+        }
+
+        
+        // Handle Answer Click
+        function selectOption(option) {
+            // Tally score
+            if (currentQuestion < 4) {
+                scoreAxis1[option]++;
+            } else {
+                scoreAxis2[option]++;
+            }
+
+            // Next Question or Result
+            if (currentQuestion < 7) {
+                currentQuestion++;
+                renderQuestion();
+            } else {
+                calculateResult();
+            }
+        }
+
+        // Calculate and Show Result
+        function calculateResult() {
+            showScreen('screen-loading');
+            
+            const axis1Result = scoreAxis1.A >= scoreAxis1.B ? 'A' : 'B';
+            const axis2Result = scoreAxis2.A >= scoreAxis2.B ? 'A' : 'B';
+            const finalType = axis1Result + axis2Result;
+            
+            const resultInfo = resultData[finalType];
+
+            // Set DOM values for result
+            document.getElementById('result-title').innerText = resultInfo.title;
+            document.getElementById('result-desc').innerText = resultInfo.desc;
+            document.getElementById('result-space').innerText = resultInfo.space;
+            document.getElementById('result-space-desc').innerText = resultInfo.spaceDesc;
+
+            // Fake loading delay for UX (Changed from 2000ms to 3000ms)
+            setTimeout(() => {
+                showScreen('screen-result');
+                window.scrollTo(0, 0); // Scroll to top
+            }, 3000);
+        }
+
+        // Accordion Toggle Logic
+        function toggleAccordion(id, btnElement) {
+            const content = document.getElementById(id);
+            const isExpanded = btnElement.getAttribute('aria-expanded') === 'true';
+            
+            if (isExpanded) {
+                btnElement.setAttribute('aria-expanded', 'false');
+                content.classList.remove('open');
+            } else {
+                btnElement.setAttribute('aria-expanded', 'true');
+                content.classList.add('open');
+            }
+        }
+
+        // Restart
+        function restartTest() {
+            // Close all accordions
+            document.querySelectorAll('.accordion-button').forEach(btn => btn.setAttribute('aria-expanded', 'false'));
+            document.querySelectorAll('.accordion-content').forEach(content => content.classList.remove('open'));
+            
+            showScreen('screen-start');
+            window.scrollTo(0, 0);
+        }
+    </script>
+</body>
+</html>
